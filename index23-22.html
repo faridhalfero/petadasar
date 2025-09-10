@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peta Dasar ATR BPN - Kerinci, Jambi</title>
+    
+    <!-- Menyertakan library Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        header {
+            background: #1a2a6c;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            color: #e6e6e6;
+        }
+        
+        .map-container {
+            display: flex;
+            flex-direction: column;
+            height: 70vh;
+            position: relative;
+        }
+        
+        #map {
+            flex: 1;
+            width: 100%;
+            z-index: 1;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .layer-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .basemap-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            background: #1a2a6c;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .basemap-btn:hover {
+            background: #2a3b8c;
+            transform: translateY(-2px);
+        }
+        
+        .basemap-btn.active {
+            background: #fdbb2d;
+            color: #333;
+        }
+        
+        .zoom-info {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+        }
+        
+        .instructions {
+            padding: 20px;
+            line-height: 1.6;
+            background: white;
+        }
+        
+        .instructions h2 {
+            color: #1a2a6c;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .location-info {
+            background: #f9f9f9;
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .location-info h2 {
+            color: #1a2a6c;
+            margin-bottom: 15px;
+        }
+        
+        .location-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .detail-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .detail-card h3 {
+            color: #1a2a6c;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #fdbb2d;
+            padding-bottom: 5px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 15px;
+            background: #1a2a6c;
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .layer-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+        
+        /* Legend styles */
+        .legend {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+        }
+        
+        .legend h4 {
+            margin: 0 0 10px;
+            color: #1a2a6c;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border: 1px solid #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Peta Dasar ATR BPN - Kerinci, Jambi</h1>
+            <p class="description">Peta dasar dengan fokus pada wilayah Kerinci, Jambi</p>
+        </header>
+        
+        <div class="controls">
+            <div class="layer-controls">
+                <button id="btn-atr" class="basemap-btn active">Peta Dasar ATR BPN</button>
+                <button id="btn-satellite" class="basemap-btn">Citra Satelit</button>
+            </div>
+            <div class="zoom-info">
+                Level Zoom: <span id="zoom-level">10</span>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+        
+        <div class="location-info">
+            <h2>Informasi Wilayah Kerinci, Jambi</h2>
+            <div class="location-details">
+                <div class="detail-card">
+                    <h3>Geografis</h3>
+                    <p>Kerinci adalah kabupaten di Provinsi Jambi yang terletak di tengah Pegunungan Bukit Barisan.</p>
+                    <p>Luas wilayah: 4.200 km²</p>
+                    <p>Koordinat: 2°05'LS - 2°45'LS dan 101°08'BT - 101°50'BT</p>
+                </div>
+                <div class="detail-card">
+                    <h3>Demografis</h3>
+                    <p>Populasi: sekitar 250.000 jiwa</p>
+                    <p>Kepadatan: 60 jiwa/km²</p>
+                    <p>Ibu kota: Sungai Penuh</p>
+                </div>
+                <div class="detail-card">
+                    <h3>Wisata</h3>
+                    <p>Danau Kerinci</p>
+                    <p>Gunung Kerinci (3.805 mdpl)</p>
+                    <p>Taman Nasional Kerinci Seblat</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h2>Petunjuk Penggunaan</h2>
+            <ul>
+                <li>Gunakan tombol di atas untuk mengganti antara Peta Dasar dan Citra Satelit</li>
+                <li>Gunakan scroll mouse untuk zoom in dan zoom out</li>
+                <li>Klik dan drag untuk menggerakkan peta</li>
+                <li>Koordinat dan level zoom saat ini akan ditampilkan di pojok kiri bawah</li>
+            </ul>
+        </div>
+        
+        <footer>
+            <p>© 2023 - Peta Dasar ATR BPN Wilayah Kerinci, Jambi</p>
+        </footer>
+    </div>
+
+    <script>
+        // Inisialisasi peta dengan view ke Kerinci, Jambi
+        const map = L.map('map').setView([-2.0833, 101.5333], 10);
+        
+        // Layer tile map dari ATRBPN
+        const atrbpnTileLayer = L.tileLayer('https://petadasar.atrbpn.go.id/main/wms/{x}/{y}/{z}', {
+            maxZoom: 22,
+            attribution: '&copy; <a href="https://www.atrbpn.go.id/">ATRBPN</a>'
+        }).addTo(map);
+        
+        // Layer satellite (opsional)
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 22,
+            attribution: 'Tiles &copy; Esri'
+        });
+        
+        // Kontrol untuk menampilkan koordinat dan zoom level
+        const coords = L.control({position: 'bottomleft'});
+        coords.onAdd = function(map) {
+            this._div = L.DomUtil.create('div', 'coords-control');
+            this.update();
+            return this._div;
+        };
+        coords.update = function(e) {
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            this._div.innerHTML = `
+                <div style="
+                    padding: 8px 12px;
+                    background: white;
+                    border-radius: 4px;
+                    box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+                    font-size: 14px;">
+                    Lat: ${center.lat.toFixed(4)}°, Lng: ${center.lng.toFixed(4)}°<br>
+                    Zoom: ${zoom}
+                </div>
+            `;
+        };
+        coords.addTo(map);
+        
+        map.on('move', coords.update, coords);
+        map.on('zoomend', function() {
+            document.getElementById('zoom-level').textContent = map.getZoom();
+            coords.update();
+        });
+        
+        // Fungsi untuk mengganti basemap
+        document.getElementById('btn-atr').addEventListener('click', function() {
+            map.removeLayer(satelliteLayer);
+            atrbpnTileLayer.addTo(map);
+            setActiveButton(this);
+        });
+        
+        document.getElementById('btn-satellite').addEventListener('click', function() {
+            map.removeLayer(atrbpnTileLayer);
+            satelliteLayer.addTo(map);
+            setActiveButton(this);
+        });
+        
+        function setActiveButton(btn) {
+            // Hapus kelas active dari semua tombol
+            document.querySelectorAll('.basemap-btn').forEach(function(button) {
+                button.classList.remove('active');
+            });
+            
+            // Tambahkan kelas active ke tombol yang diklik
+            btn.classList.add('active');
+        }
+        
+        // Tampilkan zoom level awal
+        document.getElementById('zoom-level').textContent = map.getZoom();
+        
+        // Tambahkan skala peta
+        L.control.scale({metric: true, imperial: false}).addTo(map);
+        
+        // Tambahkan marker untuk lokasi penting di Kerinci
+        const kerinciMarker = L.marker([-2.0833, 101.5333])
+            .addTo(map)
+            .bindPopup('<b>Kabupaten Kerinci</b><br>Wilayah fokus peta');
+            
+        // Tambahkan marker untuk Danau Kerinci
+        const lakeMarker = L.marker([-2.1667, 101.4667])
+            .addTo(map)
+            .bindPopup('<b>Danau Kerinci</b><br>Danau terbesar di Jambi');
+            
+        // Tambahkan marker untuk Gunung Kerinci
+        const mountainMarker = L.marker([-1.6975, 101.2640])
+            .addTo(map)
+            .bindPopup('<b>Gunung Kerinci</b><br>Gunung tertinggi di Sumatra (3.805 mdpl)');
+        
+        // Tambahkan circle untuk menunjukkan area
+        const areaCircle = L.circle([-2.0833, 101.5333], {
+            color: 'blue',
+            fillColor: '#00bfff',
+            fillOpacity: 0.1,
+            radius: 20000
+        }).addTo(map);
+        
+        // Tambahkan legenda
+        const legend = L.control({position: 'bottomright'});
+        legend.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <h4>Keterangan</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: red;"></div>
+                    <span>Lokasi Penting</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: blue; border-radius: 50%;"></div>
+                    <span>Area Kabupaten</span>
+                </div>
+            `;
+            return div;
+        };
+        legend.addTo(map);
+    </script>
+</body>
+</html>
